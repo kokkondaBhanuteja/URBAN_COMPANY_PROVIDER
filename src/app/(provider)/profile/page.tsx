@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, Plus, X } from "lucide-react";
+import { Save, Plus, X } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ErrorMessage from "@/components/shared/ErrorMessage";
 
@@ -21,13 +20,14 @@ interface ProfileData {
   bio: string;
   location: string;
   services: string[];
-  hourlyRate: number;
-  availability: string;
 }
 
 // Function to fetch the profile
 const fetchProfile = async (): Promise<ProfileData> => {
-  const res = await fetch("/api/provider/profile");
+  const token = localStorage.getItem("provider_token");
+  const res = await fetch("/api/provider/profile", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) {
     throw new Error("Failed to fetch profile");
   }
@@ -38,9 +38,10 @@ const fetchProfile = async (): Promise<ProfileData> => {
 const updateProfile = async (
   updatedProfile: ProfileData
 ): Promise<ProfileData> => {
+    const token = localStorage.getItem("provider_token");
   const res = await fetch("/api/provider/profile", {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(updatedProfile),
   });
   if (!res.ok) {
@@ -58,8 +59,6 @@ export default function ProfilePage() {
     bio: "",
     location: "",
     services: [],
-    hourlyRate: 0,
-    availability: "",
   });
 
   const [newService, setNewService] = useState("");
@@ -144,32 +143,8 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Profile Picture</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-4">
-            <Avatar className="h-32 w-32">
-              <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback className="text-2xl">
-                {profile.name && profile.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 bg-transparent"
-            >
-              <Camera className="h-4 w-4" />
-              Change Photo
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
+      <div className="grid gap-6">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Personal Information</CardTitle>
             <Button
@@ -236,29 +211,6 @@ export default function ProfilePage() {
                 onChange={(e) => handleInputChange("bio", e.target.value)}
                 disabled={!isEditing}
                 rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
-              <Input
-                id="hourlyRate"
-                type="number"
-                value={profile.hourlyRate}
-                onChange={(e) =>
-                  handleInputChange("hourlyRate", Number(e.target.value))
-                }
-                disabled={!isEditing}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="availability">Availability</Label>
-              <Input
-                id="availability"
-                value={profile.availability}
-                onChange={(e) =>
-                  handleInputChange("availability", e.target.value)
-                }
-                disabled={!isEditing}
               />
             </div>
           </CardContent>

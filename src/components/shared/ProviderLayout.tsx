@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Bell, User, HelpCircle, BarChart3, Calendar, CreditCard, Star, LogOut } from "lucide-react"
@@ -14,19 +14,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarInset,
-  SidebarHeader,
-} from "@/components/ui/sidebar"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { jwtDecode } from "jwt-decode"
 import VerificationCheck from "./VerificationCheck"
 
@@ -38,82 +27,84 @@ interface DecodedToken {
   name: string
 }
 
+const sidebarItems = [
+  { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
+  { id: "bookings", label: "My Bookings", icon: Calendar, href: "/bookings" },
+  { id: "earnings", label: "Earnings", icon: CreditCard, href: "/earnings" },
+  { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
+  { id: "support", label: "Support", icon: HelpCircle, href: "/support" },
+];
+
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
-  const [activeSection, setActiveSection] = useState("dashboard")
   const [providerName, setProviderName] = useState("Provider")
+  const [isAvailable, setIsAvailable] = useState(true)
 
   const router = useRouter()
   const pathname = usePathname()
 
-  const sidebarItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
-    { id: "bookings", label: "My Bookings", icon: Calendar, href: "/bookings" },
-    { id: "earnings", label: "Earnings", icon: CreditCard, href: "/earnings" },
-    { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
-    { id: "support", label: "Support", icon: HelpCircle, href: "/support" },
-  ]
-
-
   useEffect(() => {
-    const currentItem = sidebarItems.find((item) => pathname.startsWith(item.href))
-    if (currentItem) {
-      setActiveSection(currentItem.id)
+    const token = localStorage.getItem("provider_token")
+    if (token) {
+      try {
+        const decodedToken: DecodedToken = jwtDecode(token)
+        setProviderName(decodedToken.name || "Provider")
+      } catch (error) {
+        console.error("Invalid token:", error)
+        handleLogout()
+      }
     }
-  }, [pathname])
+  }, [])
 
-  const handleNavigation = (href: string, id: string) => {
-    setActiveSection(id)
-    router.push(href)
-  }
-
-  const handleLogout = async () => { 
+  const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push("/login")
   }
 
   return (
     <VerificationCheck>
-      <SidebarProvider defaultOpen={true} className="h-screen bg-background">
-        <Sidebar collapsible="none">
-          <SidebarHeader className="border-b px-6 py-4">
-            <h2 className="text-lg font-semibold">ServicePro</h2>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {sidebarItems.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton
-                          isActive={activeSection === item.id}
-                          onClick={() => handleNavigation(item.href, item.id)}
-                          className="w-full"
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+      <div className="flex min-h-screen bg-gray-50/50">
+        {/* Sidebar */}
+        <aside className="w-64 bg-background text-foreground p-4 flex-col hidden sm:flex border-r">
+          <div className="border-b px-2 pb-3">
+             <h2 className="text-lg font-semibold">ServicePro</h2>
+          </div>
+          <nav className="mt-4">
+            <ul className="space-y-2">
+              {sidebarItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 block py-2.5 px-4 rounded-md transition duration-200 ${
+                        isActive ? "bg-secondary text-secondary-foreground" : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </aside>
 
-        <SidebarInset>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
           <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6 sticky top-0 z-30">
-            <SidebarTrigger />
             <div className="flex-1" />
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch id="availability-toggle" checked={isAvailable} onCheckedChange={setIsAvailable} />
+                <Label htmlFor="availability-toggle">{isAvailable ? "Available" : "Unavailable"}</Label>
+              </div>
+              <Button variant="outline" size="icon" className="h-8 w-8">
                 <Bell className="h-4 w-4" />
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 bg-transparent">
+                  <Button variant="outline" className="gap-2 bg-transparent h-9">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src="/placeholder-user.jpg" />
                       <AvatarFallback>
@@ -127,7 +118,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleNavigation("/profile", "profile")}>
+                  <DropdownMenuItem onClick={() => router.push("/profile")}>
                     <User className="mr-2 h-4 w-4" /> Edit Profile
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -142,8 +133,8 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">
             <div className="mx-auto max-w-7xl">{children}</div>
           </main>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </div>
     </VerificationCheck>
   )
 }

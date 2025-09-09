@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -128,13 +127,6 @@ export default function EarningsPage() {
           icon={Download}
           description="Processed 3 days ago"
         />
-      </div>
-
-      <div className="flex gap-4">
-        <Button className="flex items-center gap-2">
-          <Download className="h-4 w-4" />
-          Request Payout
-        </Button>
       </div>
 
       <Card>
