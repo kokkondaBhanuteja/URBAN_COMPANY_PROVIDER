@@ -27,12 +27,7 @@ interface ProfileData {
 
 // Function to fetch the profile
 const fetchProfile = async (): Promise<ProfileData> => {
-  const token = localStorage.getItem("provider_token");
-  const res = await fetch("/api/provider/profile", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await fetch("/api/provider/profile");
   if (!res.ok) {
     throw new Error("Failed to fetch profile");
   }
@@ -43,13 +38,9 @@ const fetchProfile = async (): Promise<ProfileData> => {
 const updateProfile = async (
   updatedProfile: ProfileData
 ): Promise<ProfileData> => {
-  const token = localStorage.getItem("provider_token");
   const res = await fetch("/api/provider/profile", {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updatedProfile),
   });
   if (!res.ok) {

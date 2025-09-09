@@ -44,10 +44,7 @@ interface Earnings {
 }
 
 const fetchEarnings = async (): Promise<Earnings> => {
-  const token = localStorage.getItem("provider_token");
-  const res = await fetch("/api/provider/earnings", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch("/api/provider/earnings");
 
   if (!res.ok) {
     throw new Error("Failed to fetch earnings");

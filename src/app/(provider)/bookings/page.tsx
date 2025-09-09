@@ -44,10 +44,7 @@ interface Booking {
 }
 
 const fetchBookings = async (): Promise<Booking[]> => {
-  const token = localStorage.getItem("provider_token");
-  const res = await fetch("/api/provider/bookings", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch("/api/provider/bookings");
 
   if (!res.ok) {
     throw new Error("Failed to fetch bookings");

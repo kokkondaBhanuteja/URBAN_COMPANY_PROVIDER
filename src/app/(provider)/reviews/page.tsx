@@ -33,10 +33,7 @@ interface ReviewsData {
   stats: ReviewStats;
 }
 const fetchReviews = async (): Promise<ReviewsData> => {
-  const token = localStorage.getItem("provider_token");
-  const res = await fetch("/api/provider/reviews", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch("/api/provider/reviews");
   if (!res.ok) {
     throw new Error("Failed to fetch reviews");
   }

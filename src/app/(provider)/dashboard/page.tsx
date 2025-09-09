@@ -19,10 +19,7 @@ import Loader from "@/components/shared/Loader";
 import ErrorMessage from "@/components/shared/ErrorMessage";
 
 const fetchStats = async () => {
-  const token = localStorage.getItem("provider_token");
-  const res = await fetch("/api/provider/dashboard", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch("/api/provider/dashboard");
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({ message: "Failed to fetch stats" }));
