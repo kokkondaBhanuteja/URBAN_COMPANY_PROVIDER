@@ -2,7 +2,7 @@
 import User, { IUser } from '@/database/userModel';
 import Provider from '@/database/ProviderModel';
 import jwt from 'jsonwebtoken';
-import { Types  } from 'mongoose';
+import { Types } from 'mongoose';
 
 interface RegisterParams {
   userName: string;
@@ -13,8 +13,8 @@ interface RegisterParams {
 
   // Provider-specific
   bio?: string;
-  servicesOffered?: Types.ObjectId[];
-  serviceableLocations?: Types.ObjectId[];
+  servicesOffered?: string[]; // This will be an array of service IDs (strings)
+  serviceableLocations?: string[];
   availability?: {
     startTime: Date;
     endTime: Date;
@@ -31,10 +31,11 @@ export const registerUser = async (data: RegisterParams): Promise<IUser> => {
 
   // Step 2: If provider, also save provider-specific data
   if (userType === "provider") {
+    // No longer need to query for services. Mongoose will cast the string IDs to ObjectIds.
     const provider = new Provider({
       userId: user._id,
       bio,
-      servicesOffered,
+      servicesOffered, // Pass the array of ID strings directly
       serviceableLocations,
       availability,
     });
@@ -59,6 +60,13 @@ export const loginUser = async (email: string, password?: string, userType?: str
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             throw new Error('Invalid email or password');
+        }
+    }
+
+    if (user.userType === 'provider') {
+        const provider = await Provider.findOne({ userId: user._id });
+        if (!provider || !provider.isVerified) {
+            throw new Error('Your account is pending admin verification.');
         }
     }
 

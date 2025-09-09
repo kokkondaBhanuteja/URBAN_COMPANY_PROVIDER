@@ -42,19 +42,6 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    const token = localStorage.getItem("provider_token")
-    if (token) {
-      try {
-        const decodedToken: DecodedToken = jwtDecode(token)
-        setProviderName(decodedToken.name || "Provider")
-      } catch (error) {
-        console.error("Invalid token:", error)
-        handleLogout()
-      }
-    }
-  }, [])
-
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push("/login")

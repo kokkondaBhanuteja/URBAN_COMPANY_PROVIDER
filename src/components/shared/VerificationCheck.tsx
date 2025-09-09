@@ -29,20 +29,8 @@ export default function VerificationCheck({ children }: VerificationCheckProps) 
 
   useEffect(() => {
     const checkVerificationStatus = async () => {
-      const token = localStorage.getItem("provider_token")
-
-      if (!token) {
-        router.push("/login")
-        return
-      }
-
       try {
-        const decodedToken: DecodedToken = jwtDecode(token)
-        setProviderName(decodedToken.name || "Provider")
-
-        const res = await fetch("/api/provider/verification-status", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const res = await fetch("/api/provider/verification-status")
 
         if (!res.ok) {
           throw new Error("Failed to check verification status")
@@ -52,7 +40,6 @@ export default function VerificationCheck({ children }: VerificationCheckProps) 
         setIsVerified(isVerified)
       } catch (error) {
         console.error("Verification check failed:", error)
-        localStorage.removeItem("provider_token")
         router.push("/login")
       } finally {
         setIsLoading(false)
@@ -63,7 +50,6 @@ export default function VerificationCheck({ children }: VerificationCheckProps) 
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("provider_token")
     router.push("/login")
   }
 
