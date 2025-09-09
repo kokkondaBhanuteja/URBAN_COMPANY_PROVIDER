@@ -15,7 +15,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
-
+import Loader from "@/components/shared/Loader";
+import ErrorMessage from "@/components/shared/ErrorMessage";
 
 const fetchStats = async () => {
   const token = localStorage.getItem("provider_token");
@@ -37,15 +38,26 @@ export default function ProviderDashboardPage() {
     isLoading,
     isError,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: fetchStats,
   });
 
-  if (isLoading) return <div>Loading dashboard...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader />
+      </div>
+    );
+  }
 
-  if (isError || !stats) {
-    return <div>Error fetching dashboard data: {error?.message || "Stats data is missing."}</div>;
+  if (isError) {
+    return (
+       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <ErrorMessage message={error?.message || "Could not load dashboard data."} retry={refetch} />
+      </div>
+    );
   }
 
   return (

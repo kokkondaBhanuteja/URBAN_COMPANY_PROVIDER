@@ -1,5 +1,4 @@
 "use client";
-
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -11,53 +10,49 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Star, User } from "lucide-react";
 import StatCard from "../../../components/shared/StatCard";
-
+import Loader from "@/components/shared/Loader";
+import ErrorMessage from "@/components/shared/ErrorMessage";
 interface Review {
   _id: string;
   consumerId: {
-    name: string;
+    userName: string;
   };
   rating: number;
   comment: string;
   service: string; // This might need to be populated from bookingId->serviceId
   createdAt: string;
 }
-
 interface ReviewStats {
   averageRating: number;
   totalReviews: number;
   fiveStars: number;
   fourStars: number;
 }
-
 interface ReviewsData {
   reviews: Review[];
   stats: ReviewStats;
 }
-
 const fetchReviews = async (): Promise<ReviewsData> => {
   const token = localStorage.getItem("provider_token");
   const res = await fetch("/api/provider/reviews", {
     headers: { Authorization: `Bearer ${token}` },
   });
-
   if (!res.ok) {
     throw new Error("Failed to fetch reviews");
   }
-
   return res.json();
 };
-
 export default function ReviewsPage() {
   const {
     data: reviewsData,
     isLoading,
     isError,
+    error,
+    refetch
   } = useQuery({
     queryKey: ["reviews"],
     queryFn: fetchReviews,
   });
-
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -68,12 +63,22 @@ export default function ReviewsPage() {
       />
     ));
   };
-
-  if (isLoading) return <div>Loading reviews...</div>;
-  if (isError) return <div>Error fetching reviews</div>;
-
+  if (isLoading) {
+     return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader />
+      </div>
+    );
+  }
+  if (isError) {
+     return (
+       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <ErrorMessage message={error.message || "Could not load reviews."} retry={refetch} />
+      </div>
+    );
+  }
+  
   const { reviews, stats } = reviewsData!;
-
   return (
     <div className="space-y-6">
       <div className="mb-6">
@@ -82,38 +87,28 @@ export default function ReviewsPage() {
           See what your customers are saying about your services.
         </p>
       </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Average Rating"
           value={stats.averageRating}
           icon={Star}
-          description={`Based on ${stats.totalReviews} reviews`}
         />
         <StatCard
           title="Total Reviews"
           value={stats.totalReviews}
           icon={User}
-          description="All time reviews"
         />
         <StatCard
           title="5-Star Reviews"
           value={stats.fiveStars}
           icon={Star}
-          description={`${Math.round(
-            (stats.fiveStars / (stats.totalReviews || 1)) * 100
-          )}% of total`}
         />
         <StatCard
           title="4-Star Reviews"
           value={stats.fourStars}
           icon={Star}
-          description={`${Math.round(
-            (stats.fourStars / (stats.totalReviews || 1)) * 100
-          )}% of total`}
         />
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Recent Reviews</CardTitle>
@@ -126,7 +121,7 @@ export default function ReviewsPage() {
                   <Avatar>
                     <AvatarImage src={"/placeholder.svg"} />
                     <AvatarFallback>
-                      {review.consumerId.name
+                      {review.consumerId.userName
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
@@ -136,7 +131,7 @@ export default function ReviewsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-semibold">
-                          {review.consumerId.name}
+                          {review.consumerId.userName}
                         </h4>
                         <div className="flex items-center gap-2">
                           <div className="flex">{renderStars(review.rating)}</div>
@@ -160,4 +155,3 @@ export default function ReviewsPage() {
     </div>
   );
 }
-

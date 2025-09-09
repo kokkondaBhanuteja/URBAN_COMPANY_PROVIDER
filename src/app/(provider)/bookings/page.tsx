@@ -8,6 +8,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -18,10 +19,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Calendar, Clock, User, MapPin } from "lucide-react";
+import Loader from "@/components/shared/Loader";
+import ErrorMessage from "@/components/shared/ErrorMessage";
 
+// Corrected Booking Interface
 interface Booking {
   _id: string;
-  customerId:  string;
+  consumerId: { // Changed from customerId to consumerId, which is an object
+    userName: string;
+  };
   serviceId: {
     serviceName: string;
   };
@@ -30,7 +36,11 @@ interface Booking {
   serviceAddress: {
     addressLine1: string;
   };
-  totalPrice: number;
+  // Changed totalPrice to a nested pricing object to match the actual data structure
+  pricing?: {
+    basePrice: number;
+    finalAmount: number;
+  };
 }
 
 const fetchBookings = async (): Promise<Booking[]> => {
@@ -51,6 +61,8 @@ export default function BookingsPage() {
     data: bookings,
     isLoading,
     isError,
+    error,
+    refetch
   } = useQuery({
     queryKey: ["bookings"],
     queryFn: fetchBookings,
@@ -71,8 +83,20 @@ export default function BookingsPage() {
     }
   };
   
-  if (isLoading) return <div>Loading bookings...</div>;
-  if (isError) return <div>Error fetching bookings</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader />
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <ErrorMessage message={error.message || "Could not load bookings."} retry={refetch} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -86,6 +110,7 @@ export default function BookingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>All Bookings</CardTitle>
+          <CardDescription>A list of all your assigned bookings.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -101,30 +126,33 @@ export default function BookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {bookings?.map((booking) => (
+              {bookings && bookings.length > 0 ? (
+                bookings.map((booking) => (
                 <TableRow key={booking._id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      {booking.userId}
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      {/* Corrected to access nested userName */}
+                      <span>{booking.consumerId?.userName ?? 'N/A'}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{booking.serviceId.serviceName}</TableCell>
+                  <TableCell>{booking.serviceId?.serviceName ?? 'N/A'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
                       {new Date(booking.scheduledAt).toLocaleDateString()}
-                      <Clock className="h-4 w-4" />
-                      {new Date(booking.scheduledAt).toLocaleTimeString()}
+                      <Clock className="h-4 w-4 text-muted-foreground ml-2" />
+                      {new Date(booking.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {booking.serviceAddress.addressLine1}
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      {booking.serviceAddress?.addressLine1 ?? 'N/A'}
                     </div>
                   </TableCell>
-                  <TableCell>${booking.totalPrice}</TableCell>
+                  {/* FIX: Changed booking.totalPrice to booking.pricing?.finalAmount and added optional chaining */}
+                  <TableCell>${(booking.pricing?.finalAmount ?? 0).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(booking.bookingStatus)}>
                       {booking.bookingStatus}
@@ -136,7 +164,14 @@ export default function BookingsPage() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center h-24">
+                    No bookings found.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

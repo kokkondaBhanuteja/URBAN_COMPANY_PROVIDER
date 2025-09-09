@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, Plus, X } from "lucide-react";
+import Loader from "@/components/shared/Loader";
+import ErrorMessage from "@/components/shared/ErrorMessage";
 
 // Define the shape of the profile data
 interface ProfileData {
@@ -73,7 +75,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
 
   // Fetch profile data using useQuery
-  const { data: initialProfile, isLoading } = useQuery({
+  const { data: initialProfile, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["profile"],
     queryFn: fetchProfile,
   });
@@ -105,10 +107,10 @@ export default function ProfilePage() {
   };
 
   const addService = () => {
-    if (newService.trim() && !profile.services.includes(newService.trim())) {
+    if (newService.trim() && !(profile.services || []).includes(newService.trim())) {
       setProfile((prev) => ({
         ...prev,
-        services: [...prev.services, newService.trim()],
+        services: [...(prev.services || []), newService.trim()],
       }));
       setNewService("");
     }
@@ -125,7 +127,22 @@ export default function ProfilePage() {
     mutation.mutate(profile);
   };
 
-  if (isLoading) return <div>Loading profile...</div>;
+  if (isLoading) {
+     return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <ErrorMessage message={error.message || "Could not load profile."} retry={refetch} />
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
@@ -145,7 +162,7 @@ export default function ProfilePage() {
             <Avatar className="h-32 w-32">
               <AvatarImage src="/placeholder-user.jpg" />
               <AvatarFallback className="text-2xl">
-                {profile.name
+                {profile.name && profile.name
                   .split(" ")
                   .map((n) => n[0])
                   .join("")}
@@ -263,7 +280,7 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {profile.services.map((service) => (
+            {(profile.services || []).map((service) => (
               <Badge
                 key={service}
                 variant="secondary"

@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/table";
 import { DollarSign, TrendingUp, Clock, Download } from "lucide-react";
 import StatCard from "@/components/shared/StatCard";
+import Loader from "@/components/shared/Loader";
+import ErrorMessage from "@/components/shared/ErrorMessage";
+
 
 interface Transaction {
   _id: string;
@@ -58,6 +61,8 @@ export default function EarningsPage() {
     data: earningsData,
     isLoading,
     isError,
+    error,
+    refetch
   } = useQuery({
     queryKey: ["earnings"],
     queryFn: fetchEarnings,
@@ -76,8 +81,20 @@ export default function EarningsPage() {
     }
   };
 
-  if (isLoading) return <div>Loading earnings...</div>;
-  if (isError) return <div>Error fetching earnings</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <Loader />
+      </div>
+    );
+  }
+  if (isError) {
+     return (
+       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <ErrorMessage message={error.message || "Could not load earnings data."} retry={refetch} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -121,7 +138,6 @@ export default function EarningsPage() {
           <Download className="h-4 w-4" />
           Request Payout
         </Button>
-        <Button variant="outline">Download Statement</Button>
       </div>
 
       <Card>
