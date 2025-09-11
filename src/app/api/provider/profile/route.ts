@@ -3,7 +3,8 @@ import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { connectDb } from "@/lib/dbConnect";
 import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
-import Service from "@/database/serviceModel"; // Import the Service model
+import Service from "@/database/serviceModel";
+
 
 export async function GET(req: NextRequest) {
   await connectDb();
@@ -13,14 +14,16 @@ export async function GET(req: NextRequest) {
     const userId = headersWithUser.get("x-user-id");
 
     if (!userId) {
-        return NextResponse.json({ message: "User ID not found after middleware" }, { status: 401 });
+      return NextResponse.json(
+        { message: "User ID not found after middleware" },
+        { status: 401 }
+      );
     }
 
-    // Fetch both user and provider details
     const user = await User.findById(userId).select("userName email mobileNumber");
     const provider = await Provider.findOne({ userId }).populate(
       "servicesOffered",
-      "serviceName" // Populate only the serviceName
+      "serviceName"
     );
 
     if (!provider || !user) {
@@ -30,16 +33,36 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Combine data into a single profile object
+    // --- START OF THE FIX ---
+    const formattedAvailability = provider.availability.map(slot => {
+        const startTime = new Date(slot.startTime);
+        const endTime = new Date(slot.endTime);
+
+        const formatTime = (date: Date) => {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        };
+
+        return {
+            ...slot.toObject(),
+            startTime: formatTime(startTime),
+            endTime: formatTime(endTime),
+        };
+    });
+    // --- END OF THE FIX ---
+
     const profileData = {
-        name: user.userName,
-        email: user.email,
-        phone: user.mobileNumber,
-        bio: provider.bio || '',
-        location: provider.serviceableLocations,
-        // Map the populated services to an array of strings
-        services: (provider.servicesOffered as any[]).map(service => service.serviceName),
-    }
+      name: user.userName,
+      email: user.email,
+      phone: user.mobileNumber,
+      bio: provider.bio || "",
+      location: provider.serviceableLocations,
+      services: (provider.servicesOffered as any[]).map(
+        (service) => service.serviceName
+      ),
+      availability: formattedAvailability, // Use the newly formatted array
+    };
 
     return NextResponse.json(profileData);
   } catch (error: any) {
@@ -58,32 +81,49 @@ export async function PUT(req: NextRequest) {
     const userId = headersWithUser.get("x-user-id");
 
     if (!userId) {
-        return NextResponse.json({ message: "User ID not found after middleware" }, { status: 401 });
+      return NextResponse.json(
+        { message: "User ID not found after middleware" },
+        { status: 401 }
+      );
     }
 
     const updateData = await req.json();
 
-    // Update user basic info
+    // --- START OF THE FIX ---
+    let convertedAvailability;
+    if (updateData.availability && Array.isArray(updateData.availability)) {
+        convertedAvailability = updateData.availability.map(slot => {
+            const startTimeAsDate = new Date(`1970-01-01T${slot.startTime}:00`);
+            const endTimeAsDate = new Date(`1970-01-01T${slot.endTime}:00`);
+
+            return {
+                ...slot,
+                startTime: startTimeAsDate,
+                endTime: endTimeAsDate,
+            };
+        });
+    }
+    // --- END OF THE FIX ---
+
     await User.findByIdAndUpdate(userId, {
-      userName: updateData.name, // Corrected from userName
+      userName: updateData.name,
       email: updateData.email,
-      mobileNumber: updateData.phone, // Corrected from mobileNumber
+      mobileNumber: updateData.phone,
     });
-    
-    // Convert service names back to ObjectIds
+
     const serviceIds = await Service.find({
-        serviceName: { $in: updateData.services }
-    }).select('_id');
+      serviceName: { $in: updateData.services },
+    }).select("_id");
 
-    const serviceObjectIds = serviceIds.map(s => s._id);
+    const serviceObjectIds = serviceIds.map((s) => s._id);
 
-    // Update provider profile
     const provider = await Provider.findOneAndUpdate(
       { userId },
       {
         bio: updateData.bio,
         serviceableLocations: updateData.location,
-        servicesOffered: serviceObjectIds, // Use the resolved ObjectIds
+        servicesOffered: serviceObjectIds,
+        availability: convertedAvailability, // Use the new array with Date objects
       },
       { new: true }
     ).populate("userId", "name email");
