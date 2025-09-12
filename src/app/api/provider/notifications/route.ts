@@ -3,12 +3,9 @@ import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { connectDb } from "@/lib/dbConnect";
 import Booking from "@/database/bookingModel";
 import Provider from "@/database/ProviderModel";
-import Service from "@/database/serviceModel"; // Import Service model
-import User from "@/database/userModel";     // Import User model
 
 export async function GET(req: NextRequest) {
   await connectDb();
-
   try {
     const headersWithUser = await providerMiddleware(req);
     const userId = headersWithUser.get("x-user-id");
@@ -26,20 +23,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const bookings = await Booking.find({
+    // Fetch recent bookings that are assigned or confirmed
+    const recentBookings = await Booking.find({
       providerId: provider._id,
+      bookingStatus: { $in: ["assigned", "confirmed"] },
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Last 24 hours
     })
-      .populate({ path: "userId", select: "userName" }) // Correctly populate consumerId and select userName
-      .populate("serviceId", "serviceName")
-      .sort({ scheduledAt: -1 })
-      .limit(50);
+      .populate({ path: "userId", select: "userName" })
+      .sort({ createdAt: -1 });
 
-    return NextResponse.json(bookings);
+    return NextResponse.json(recentBookings);
   } catch (error: any) {
-    console.error("Bookings fetch error:", error);
+    console.error("Notifications fetch error:", error);
     return NextResponse.json(
-      { message: error.message || "An error occurred while fetching bookings" },
+      { message: error.message || "An error occurred while fetching notifications" },
       { status: 500 }
     );
   }
-}
+}   

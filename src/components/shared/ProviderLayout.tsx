@@ -1,31 +1,26 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import { Bell, User, HelpCircle, BarChart3, Calendar, CreditCard, Star, LogOut } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import type React from "react";
+import Link from "next/link";
+import { useEffect, useState, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { Bell, User, HelpCircle, BarChart3, Calendar, CreditCard, Star, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { jwtDecode } from "jwt-decode"
-import VerificationCheck from "./VerificationCheck"
-
-interface DecodedToken {
-  id: string
-  userType: string
-  iat: number
-  exp: number
-  name: string
-}
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import VerificationCheck from "./VerificationCheck";
+import { toast } from "sonner";
+import { BookingNotification } from "./BookingNotification";
 
 const sidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
@@ -35,12 +30,54 @@ const sidebarItems = [
   { id: "support", label: "Support", icon: HelpCircle, href: "/support" },
 ];
 
+interface Booking {
+  _id: string;
+  userId: {
+    userName: string;
+  };
+  scheduledAt: string;
+}
+
+// Fetch notifications
+const fetchNotifications = async (): Promise<Booking[]> => {
+    const res = await fetch("/api/provider/notifications");
+    if (!res.ok) {
+        throw new Error("Failed to fetch notifications");
+    }
+    return res.json();
+};
+
+
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
-  const [providerName, setProviderName] = useState("Provider")
+  const [providerName, setProviderName] = useState("Provider") // You can fetch this from your auth context
   const [isAvailable, setIsAvailable] = useState(true)
+  const shownNotificationsRef = useRef(new Set());
+
 
   const router = useRouter()
   const pathname = usePathname()
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: fetchNotifications,
+    refetchInterval: 15000, // Poll every 15 seconds
+  });
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      notifications.forEach((booking) => {
+        if (!shownNotificationsRef.current.has(booking._id)) {
+          toast.custom((t) => (
+             <BookingNotification booking={booking} />
+          ));
+          shownNotificationsRef.current.add(booking._id);
+        }
+      });
+    }
+  }, [notifications]);
+
+
+  const unreadCount = notifications.length;
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -86,9 +123,34 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
                 <Switch id="availability-toggle" checked={isAvailable} onCheckedChange={setIsAvailable} />
                 <Label htmlFor="availability-toggle">{isAvailable ? "Available" : "Unavailable"}</Label>
               </div>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <Bell className="h-4 w-4" />
-              </Button>
+
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8 relative">
+                        <Bell className="h-4 w-4" />
+                        {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                            {unreadCount}
+                        </span>
+                        )}
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {notifications.length > 0 ? (
+                        notifications.map((booking) => (
+                        <DropdownMenuItem key={booking._id} className="flex flex-col items-start gap-1">
+                            <p className="font-semibold">New Booking from {booking.userId.userName}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(booking.scheduledAt).toLocaleString()}</p>
+                        </DropdownMenuItem>
+                        ))
+                    ) : (
+                        <DropdownMenuItem>No new notifications</DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+                </DropdownMenu>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 bg-transparent h-9">
