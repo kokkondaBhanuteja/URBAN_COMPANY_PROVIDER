@@ -3,10 +3,6 @@ import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { connectDb } from "@/lib/dbConnect";
 import Booking from "@/database/bookingModel";
 
-// A mock OTP for demonstration purposes. In a real application, this would be
-// generated and stored securely, likely in a separate OTPs collection or cache.
-const MOCK_OTP = "123456";
-
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -23,10 +19,17 @@ export async function POST(
       return NextResponse.json({ message: "OTP is required" }, { status: 400 });
     }
 
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return NextResponse.json(
+        { message: "Booking not found" },
+        { status: 404 }
+      );
+    }
+
     // --- OTP Verification Logic ---
-    // In a real-world scenario, you would fetch the OTP from your database or cache
-    // and verify it against the one provided. For this example, we use a mock OTP.
-    if (otp !== MOCK_OTP) {
+    if (booking.bookingOtp !== otp) {
       return NextResponse.json(
         { message: "Invalid OTP provided." },
         { status: 400 }
@@ -42,13 +45,6 @@ export async function POST(
       },
       { new: true } // Return the updated document
     );
-
-    if (!updatedBooking) {
-      return NextResponse.json(
-        { message: "Booking not found" },
-        { status: 404 }
-      );
-    }
 
     return NextResponse.json(updatedBooking);
   } catch (error: any) {

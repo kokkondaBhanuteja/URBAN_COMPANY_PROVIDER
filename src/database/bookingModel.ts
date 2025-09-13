@@ -2,10 +2,11 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 
 // Booking interface
 export interface IBooking extends Document {
+  orderId: string; // Add this line
   userId: Types.ObjectId;
   providerId?: Types.ObjectId | null;
   serviceId: Types.ObjectId;
-
+  bookingOtp?: string;
   serviceAddress: {
     addressLine1: string;
     city: string;
@@ -40,9 +41,11 @@ export interface IBooking extends Document {
 
 const bookingSchema = new Schema<IBooking>(
   {
+    orderId: { type: String, required: true, index: true }, // Add this field
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     providerId: { type: Schema.Types.ObjectId, ref: "Provider" }, // Nullable
     serviceId: { type: Schema.Types.ObjectId, ref: "Service", required: true },
+    bookingOtp: { type: String },
 
     serviceAddress: {
       addressLine1: { type: String, required: true },

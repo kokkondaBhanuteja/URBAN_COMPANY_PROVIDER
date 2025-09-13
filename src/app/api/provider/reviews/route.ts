@@ -3,6 +3,7 @@ import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { connectDb } from "@/lib/dbConnect";
 import Review from "@/database/reviewModel";
 import Provider from "@/database/ProviderModel";
+import User from "@/database/userModel"; // Ensure User model is imported for population
 
 export async function GET(req: NextRequest) {
   await connectDb();
@@ -26,7 +27,8 @@ export async function GET(req: NextRequest) {
     const reviews = await Review.find({
       providerId: provider._id,
     })
-      .populate("customerId", "name")
+      // FIX: Changed "customerId" to "consumerId" and "name" to "userName" to match the models
+      .populate({ path: "consumerId", select: "userName", model: User })
       .sort({ createdAt: -1 })
       .limit(50);
 

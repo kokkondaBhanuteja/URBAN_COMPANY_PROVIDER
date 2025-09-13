@@ -18,11 +18,12 @@ export const getProviderDashboardStats = async (providerId: string) => {
                 bookingStatus: 'completed',
                 completedAt: {
                     $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-                    $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+                    $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0) // Corrected to last day of month
                 }
             }
         },
-        { $group: { _id: null, total: { $sum: '$totalPrice' } } }
+        // --- FIX: Use the correct field 'pricing.finalAmount' for summing ---
+        { $group: { _id: null, total: { $sum: '$pricing.finalAmount' } } }
     ]);
 
     const providerData = await Provider.findById(providerId);
@@ -43,7 +44,8 @@ export const getProviderDashboardStats = async (providerId: string) => {
         {
             $group: {
                 _id: { $month: "$completedAt" },
-                total: { $sum: '$totalPrice' }
+                // --- FIX: Use the correct field 'pricing.finalAmount' for summing ---
+                total: { $sum: '$pricing.finalAmount' }
             }
         },
         {

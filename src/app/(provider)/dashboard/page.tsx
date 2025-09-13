@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import StatCard from "@/components/shared/StatCard";
+import StatCard from "../../../components/shared/StatCard";
 import { Calendar, Clock, DollarSign, Star } from "lucide-react";
 import {
   Card,
@@ -15,8 +15,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
-import Loader from "@/components/shared/Loader";
-import ErrorMessage from "@/components/shared/ErrorMessage";
+import Loader from "../../../components/shared/Loader";
+import ErrorMessage from "../../../components/shared/ErrorMessage";
 
 const fetchStats = async () => {
   const res = await fetch("/api/provider/dashboard");
@@ -68,27 +68,27 @@ export default function ProviderDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Bookings"
-          value={stats.totalBookings}
+          value={stats?.totalBookings ?? 0}
           icon={Calendar}
           description="+12% from last month"
           trend="up"
         />
         <StatCard
           title="Upcoming Bookings"
-          value={stats.upcomingBookings}
+          value={stats?.upcomingBookings ?? 0}
           icon={Clock}
           description="Next 7 days"
         />
         <StatCard
           title="Earnings This Month"
-          value={`$${stats.monthlyEarnings.toFixed(2)}`}
+          value={`$${(stats?.monthlyEarnings ?? 0).toFixed(2)}`}
           icon={DollarSign}
           description="+8% from last month"
           trend="up"
         />
         <StatCard
           title="Average Rating"
-          value={stats.averageRating}
+          value={stats?.averageRating ?? 0}
           icon={Star}
           description="Based on 95 reviews"
         />
@@ -103,7 +103,7 @@ export default function ProviderDashboardPage() {
               earnings: { label: "Earnings", color: "hsl(var(--chart-1))" },
             }}
           >
-            <LineChart data={stats.earningsData}>
+            <LineChart data={stats?.earningsData || []}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="month"
@@ -127,3 +127,4 @@ export default function ProviderDashboardPage() {
     </div>
   );
 }
+

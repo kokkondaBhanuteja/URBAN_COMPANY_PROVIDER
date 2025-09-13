@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import VerificationCheck from "./VerificationCheck";
 import { toast } from "sonner";
 import { BookingNotification } from "./BookingNotification";
+import { jwtDecode } from "jwt-decode";
 
 const sidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
@@ -78,6 +79,32 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
 
   const router = useRouter()
   const pathname = usePathname()
+
+  useEffect(() => {
+    // Helper function to get a cookie by name
+    const getCookie = (name: string): string | undefined => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) {
+        const popped = parts.pop();
+        if (popped) return popped.split(';').shift();
+      }
+    };
+
+    const token = getCookie("provider_token");
+    if (token) {
+      try {
+        // Decode the token to get the user's name
+        const decodedToken: { name: string } = jwtDecode(token);
+        if (decodedToken.name) {
+          setProviderName(decodedToken.name);
+        }
+      } catch (error) {
+        console.error("Invalid token:", error);
+        // Optionally handle the error, e.g., by logging out
+      }
+    }
+  }, []);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
@@ -235,3 +262,4 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     </VerificationCheck>
   )
 }
+

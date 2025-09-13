@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { getProviderDashboardStats } from "@/services/provider/dashboardService";
 import { connectDb } from "@/lib/dbConnect";
@@ -13,21 +13,18 @@ export async function GET(req: NextRequest) {
         
         // Get the userId from the headers returned by the middleware
         const userId = headersWithUser.get('x-user-id');
-        console.log("User ID from headers:", userId);
 
         if (!userId) {
             return NextResponse.json({ message: "User ID not found after middleware" }, { status: 401 });
         }
  
         const provider = await Provider.findOne({ userId });
-        console.log("Provider found:", provider);
 
         if (!provider) {
             return NextResponse.json({ message: "Provider profile not found" }, { status: 404 });
         }
 
         const stats = await getProviderDashboardStats(provider._id.toString());
-        console.log("Stats", stats)
 
         return NextResponse.json(stats);
 

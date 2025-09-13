@@ -9,7 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Star, User } from "lucide-react";
-import StatCard from "../../../components/shared/StatCard";
+import StatCard from "@/components/shared/StatCard";
 import Loader from "@/components/shared/Loader";
 import ErrorMessage from "@/components/shared/ErrorMessage";
 interface Review {
@@ -116,19 +116,21 @@ export default function ReviewsPage() {
               <div key={review._id} className="border-b pb-6 last:border-b-0">
                 <div className="flex items-start gap-4">
                   <Avatar>
-                    <AvatarImage src={"/placeholder.svg"} />
+                    <AvatarImage src={"/user.png"} />
                     <AvatarFallback>
-                      {review.consumerId.userName
-                        .split(" ")
+                      {/* FIX: Add a check to prevent crash if userName is missing */}
+                      {review.consumerId?.userName
+                        ?.split(" ")
                         .map((n) => n[0])
-                        .join("")}
+                        .join("") || "NA"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-semibold">
-                          {review.consumerId.userName}
+                          {/* Use optional chaining for safety */}
+                          {review.consumerId?.userName || "Anonymous User"}
                         </h4>
                         <div className="flex items-center gap-2">
                           <div className="flex">{renderStars(review.rating)}</div>
@@ -152,3 +154,4 @@ export default function ReviewsPage() {
     </div>
   );
 }
+
