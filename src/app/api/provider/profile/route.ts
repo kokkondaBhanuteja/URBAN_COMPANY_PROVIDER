@@ -5,7 +5,18 @@ import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
 import Service from "@/database/serviceModel";
 
+type DbAvailabilitySlot = {
+  startTime: Date;
+  endTime: Date;
+  toObject: () => any; // Add the toObject method from Mongoose
+};
 
+// Define a type for the availability slot from the API request
+type ApiAvailabilitySlot = {
+  startTime: string;
+  endTime: string;
+  dayOfWeek: string; // Assuming dayOfWeek is also part of the slot
+};
 export async function GET(req: NextRequest) {
   await connectDb();
 
@@ -34,7 +45,7 @@ export async function GET(req: NextRequest) {
     }
 
     // --- START OF THE FIX ---
-    const formattedAvailability = provider.availability.map(slot => {
+    const formattedAvailability = provider.availability.map((slot: DbAvailabilitySlot) => {
         const startTime = new Date(slot.startTime);
         const endTime = new Date(slot.endTime);
 
@@ -92,7 +103,7 @@ export async function PUT(req: NextRequest) {
     // --- START OF THE FIX ---
     let convertedAvailability;
     if (updateData.availability && Array.isArray(updateData.availability)) {
-        convertedAvailability = updateData.availability.map(slot => {
+        convertedAvailability = updateData.availability.map((slot:ApiAvailabilitySlot) => {
             const startTimeAsDate = new Date(`1970-01-01T${slot.startTime}:00`);
             const endTimeAsDate = new Date(`1970-01-01T${slot.endTime}:00`);
 

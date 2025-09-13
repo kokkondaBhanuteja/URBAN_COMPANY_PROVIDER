@@ -15,10 +15,10 @@ interface RegisterParams {
   bio?: string;
   servicesOffered?: string[]; // This will be an array of service IDs (strings)
   serviceableLocations?: string[];
+  isActive?: boolean;
   availability?: {
     startTime: Date;
     endTime: Date;
-    isUnavailable?: boolean;
   }[];
 }
 
@@ -37,6 +37,7 @@ export const registerUser = async (data: RegisterParams): Promise<IUser> => {
       bio,
       servicesOffered, // Pass the array of ID strings directly
       serviceableLocations,
+      isActive: false,
       availability,
     });
     await provider.save();
