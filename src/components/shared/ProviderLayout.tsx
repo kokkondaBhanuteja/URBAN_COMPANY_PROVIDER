@@ -4,7 +4,7 @@ import type React from "react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, User, HelpCircle, BarChart3, Calendar, CreditCard, Star, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,10 +47,32 @@ const fetchNotifications = async (): Promise<Booking[]> => {
     return res.json();
 };
 
+const fetchAvailability = async () => {
+  const res = await fetch("/api/provider/verification-status");
+  if (!res.ok) {
+    throw new Error("Failed to fetch availability status");
+  }
+  const data = await res.json();
+  return data.isActive;
+};
+
+const updateAvailability = async (isActive: boolean) => {
+  const res = await fetch("/api/provider/availability", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isActive }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update availability");
+  }
+
+  return res.json();
+};
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
-  const [providerName, setProviderName] = useState("Provider") // You can fetch this from your auth context
-  const [isAvailable, setIsAvailable] = useState(true)
+  const [providerName, setProviderName] = useState("Provider")
+  const queryClient = useQueryClient();
   const shownNotificationsRef = useRef(new Set());
 
 
@@ -61,6 +83,22 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     queryKey: ['notifications'],
     queryFn: fetchNotifications,
     refetchInterval: 15000, // Poll every 15 seconds
+  });
+
+  const { data: isAvailable, isLoading: isLoadingAvailability } = useQuery({
+    queryKey: ["availability"],
+    queryFn: fetchAvailability,
+  });
+
+  const mutation = useMutation({
+    mutationFn: updateAvailability,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["availability"], data.isActive);
+      toast.success(`You are now ${data.isActive ? "Available" : "Unavailable"}.`);
+    },
+    onError: () => {
+      toast.error("Failed to update availability status.");
+    },
   });
 
   useEffect(() => {
@@ -83,6 +121,11 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push("/login")
   }
+
+  const handleAvailabilityChange = (checked: boolean) => {
+    mutation.mutate(checked);
+  };
+
 
   return (
     <VerificationCheck>
@@ -120,7 +163,12 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
             <div className="flex-1" />
             <div className="flex items-center gap-4">
               <div className="flex items-center space-x-2">
-                <Switch id="availability-toggle" checked={isAvailable} onCheckedChange={setIsAvailable} />
+                <Switch
+                  id="availability-toggle"
+                  checked={isAvailable}
+                  onCheckedChange={handleAvailabilityChange}
+                  disabled={isLoadingAvailability || mutation.isPending}
+                />
                 <Label htmlFor="availability-toggle">{isAvailable ? "Available" : "Unavailable"}</Label>
               </div>
 

@@ -15,7 +15,7 @@ export default function QueryProvider({
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors gap={16} />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
