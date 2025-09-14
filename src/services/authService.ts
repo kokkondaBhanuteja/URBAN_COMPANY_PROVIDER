@@ -1,6 +1,7 @@
-// src/services/authService.ts
 import User, { IUser } from '@/database/userModel';
 import Provider from '@/database/ProviderModel';
+import Address from '@/database/addressmodel';
+import Wallet from '@/database/walletModel';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 
@@ -10,10 +11,16 @@ interface RegisterParams {
   password?: string;
   mobileNumber: string;
   userType: "consumer" | "provider" | "admin";
-
-  // Provider-specific
+  address: {
+    addressLine1: string;
+    city: string;
+    pincode: string;
+    state: string;
+    country: string;
+    addressType: "home" | "work" | "other";
+  };
   bio?: string;
-  servicesOffered?: string[]; // This will be an array of service IDs (strings)
+  servicesOffered?: string[];
   serviceableLocations?: string[];
   isActive?: boolean;
   availability?: {
@@ -23,19 +30,29 @@ interface RegisterParams {
 }
 
 export const registerUser = async (data: RegisterParams): Promise<IUser> => {
-  const { userName, email, password, mobileNumber, userType, bio, servicesOffered, serviceableLocations, availability } = data;
+  const { userName, email, password, mobileNumber, userType, bio, servicesOffered, serviceableLocations, availability, address } = data;
 
-  // Step 1: Save User
   const user = new User({ userName, email, password, mobileNumber, userType });
   await user.save();
+  
+  const newAddress = new Address({
+    userId: user._id,
+    ...address,
+  });
+  await newAddress.save();
 
-  // Step 2: If provider, also save provider-specific data
   if (userType === "provider") {
-    // No longer need to query for services. Mongoose will cast the string IDs to ObjectIds.
+    const newWallet = new Wallet({
+      userId: user._id,
+      balance: 0,
+    });
+    await newWallet.save();
+
     const provider = new Provider({
       userId: user._id,
+      walletId: newWallet._id,
       bio,
-      servicesOffered, // Pass the array of ID strings directly
+      servicesOffered,
       serviceableLocations,
       isActive: false,
       availability,
@@ -46,7 +63,7 @@ export const registerUser = async (data: RegisterParams): Promise<IUser> => {
   return user;
 };
 
-
+// --- THIS IS THE COMPLETE AND CORRECTED FUNCTION ---
 export const loginUser = async (email: string, password?: string, userType?: string) => {
     const user = await User.findOne({ email });
     if (!user) {
@@ -57,7 +74,7 @@ export const loginUser = async (email: string, password?: string, userType?: str
         throw new Error('You are not authorized to access this page');
     }
 
-    if(password){
+    if (password) {
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             throw new Error('Invalid email or password');
@@ -66,11 +83,17 @@ export const loginUser = async (email: string, password?: string, userType?: str
 
     if (user.userType === 'provider') {
         const provider = await Provider.findOne({ userId: user._id });
-        if (!provider || !provider.isVerified) {
+        if (!provider) {
+            // This case handles if a user exists but has no provider profile
+            throw new Error('Provider profile not found.');
+        }
+        if (!provider.isVerified) {
+            // This is the crucial check for new providers
             throw new Error('Your account is pending admin verification.');
         }
     }
 
     const token = jwt.sign({ id: user._id, userType: user.userType, name: user.userName }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+    
     return { token, user };
 };

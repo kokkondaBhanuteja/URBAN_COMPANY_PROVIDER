@@ -7,16 +7,21 @@ export async function POST(req: NextRequest) {
   await connectDb();
   try {
     const { email, password } = await req.json();
-    // The userType 'provider' ensures only providers can log in through this route
-    const { token, user } = await loginUser(email, password, 'provider');
+    
+    const loginResult = await loginUser(email, password, 'provider');
 
-    // Create the response object to set the cookie
+    // This check prevents the destructuring error if loginResult is not as expected.
+    if (!loginResult || !loginResult.token || !loginResult.user) {
+        throw new Error("Login failed: Could not retrieve authentication token.");
+    }
+
+    const { token, user } = loginResult;
+
     const response = NextResponse.json({
       message: "Login successful",
       user: { id: user._id, fullName: user.userName, email: user.email }
     });
 
-    // Set the token in an HttpOnly cookie
     response.cookies.set('provider_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    // This ensures that specific errors like "pending verification" are sent to the frontend.
     return NextResponse.json({ message: errorMessage }, { status: 401 });
   }
 }

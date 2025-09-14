@@ -8,15 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Eye, EyeOff, User, Mail, Phone, MapPin, FileText, Briefcase } from "lucide-react"
+import { Eye, EyeOff, User, Mail, Phone, MapPin, FileText, Briefcase, Home } from "lucide-react"
 import Loader from "../../components/shared/Loader"
 
-// Updated interface to match the API response
 interface Service {
   _id: string;
   serviceName: string;
 }
-
 
 export default function ProviderRegistrationPage() {
   const [formData, setFormData] = useState({
@@ -27,7 +25,15 @@ export default function ProviderRegistrationPage() {
     confirmPassword: "",
     bio: "",
     serviceableLocations: "",
-    servicesOffered: [] as string[], // This will now store an array of service IDs
+    servicesOffered: [] as string[],
+    // --- START: ADD ADDRESS STATE ---
+    address: {
+        addressLine1: "",
+        city: "",
+        pincode: "",
+        state: "",
+    },
+    // --- END: ADD ADDRESS STATE ---
   })
 
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
@@ -56,14 +62,25 @@ export default function ProviderRegistrationPage() {
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    const { name, value } = e.target;
+    // --- START: HANDLE NESTED ADDRESS STATE ---
+    if (name in formData.address) {
+        setFormData((prev) => ({
+            ...prev,
+            address: {
+                ...prev.address,
+                [name]: value,
+            },
+        }));
+    } else {
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    }
+    // --- END: HANDLE NESTED ADDRESS STATE ---
   }
 
-  // Updated to handle service IDs
   const handleMultiSelectChange = (serviceId: string) => {
     setFormData((prev) => {
     const services = prev.servicesOffered.includes(serviceId)
@@ -83,6 +100,12 @@ export default function ProviderRegistrationPage() {
     if (formData.password !== formData.confirmPassword) return "Passwords do not match"
     if (!formData.serviceableLocations.trim()) return "Service locations are required"
     if (formData.servicesOffered.length === 0) return "Please select at least one service."
+    // --- START: ADD ADDRESS VALIDATION ---
+    if (!formData.address.addressLine1.trim()) return "Address is required";
+    if (!formData.address.city.trim()) return "City is required";
+    if (!formData.address.pincode.trim()) return "Pincode is required";
+    if (!formData.address.state.trim()) return "State is required";
+    // --- END: ADD ADDRESS VALIDATION ---
 
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -107,19 +130,23 @@ export default function ProviderRegistrationPage() {
     setIsLoading(true)
 
     try {
-      // The servicesOffered field now correctly sends an array of IDs
       const registrationData = {
         userName: formData.userName.trim(),
         email: formData.email.trim().toLowerCase(),
         mobileNumber: formData.mobileNumber.replace(/\D/g, ""),
         password: formData.password,
-        userType: "provider",
+        userType: "provider" as const,
         bio: formData.bio.trim(),
         serviceableLocations: formData.serviceableLocations
           .split(",")
           .map((loc) => loc.trim())
           .filter((loc) => loc),
         servicesOffered: formData.servicesOffered,
+        address: { // <-- Pass the address object
+            ...formData.address,
+            country: "India", // Default country
+            addressType: "work" as const, // Default type for providers
+        },
       }
 
       const res = await fetch("/api/auth/register", {
@@ -167,7 +194,7 @@ export default function ProviderRegistrationPage() {
 
   return (
      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-        <Card className="w-full max-w-2xl shadow-xl rounded-xl border">
+        <Card className="w-full max-w-4xl shadow-xl rounded-xl border">
             <CardHeader className="text-center">
                 <CardTitle className="text-3xl font-bold text-foreground">Join as a Service Provider</CardTitle>
                 <CardDescription>Create your provider account to start connecting with customers.</CardDescription>
@@ -176,9 +203,9 @@ export default function ProviderRegistrationPage() {
                 {isLoading ? (
                     <div className="py-8"><Loader /></div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
 
-                        {/* Column 1 */}
+                        {/* Column 1: Personal Info */}
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="userName" className="flex items-center gap-2"><User className="h-4 w-4" />Full Name</Label>
@@ -212,25 +239,17 @@ export default function ProviderRegistrationPage() {
                             </div>
                         </div>
 
-                        {/* Column 2 */}
+                        {/* Column 2: Service Info */}
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="serviceableLocations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Service Locations</Label>
-                                <Input id="serviceableLocations" name="serviceableLocations" type="text" value={formData.serviceableLocations} onChange={handleInputChange} placeholder="e.g., New York, Los Angeles" required />
-                                <p className="text-xs text-muted-foreground">Enter locations separated by commas.</p>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="flex items-center gap-2"><Briefcase className="h-4 w-4" />Services Offered</Label>
-                                <div className="p-2 border rounded-md h-40 overflow-y-auto">
+                             <div className="space-y-2">
+                                <Label htmlFor="servicesOffered" className="flex items-center gap-2"><Briefcase className="h-4 w-4" />Services Offered</Label>
+                                <div className="p-2 border rounded-md h-28 overflow-y-auto">
                                 {availableServices.map((service) => (
                                     <div key={service._id} className="flex items-center gap-2 p-1">
                                     <input
                                         type="checkbox"
                                         id={service._id}
-                                        // Check against the service ID
                                         checked={formData.servicesOffered.includes(service._id)}
-                                        // Pass the service ID to the handler
                                         onChange={() => handleMultiSelectChange(service._id)}
                                     />
                                     <label htmlFor={service._id}>{service.serviceName}</label>
@@ -238,16 +257,45 @@ export default function ProviderRegistrationPage() {
                                 ))}
                                 </div>
                             </div>
-
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="serviceableLocations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Serviceable Locations</Label>
+                                <Input id="serviceableLocations" name="serviceableLocations" type="text" value={formData.serviceableLocations} onChange={handleInputChange} placeholder="e.g., New York, Los Angeles" required />
+                                <p className="text-xs text-muted-foreground">Enter city names separated by commas.</p>
+                            </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="bio" className="flex items-center gap-2"><FileText className="h-4 w-4" />Bio (Optional)</Label>
-                                <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about your experience..." rows={3} />
+                                <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about your experience..." rows={2} />
                             </div>
                         </div>
 
+                        {/* --- START: ADD ADDRESS FIELDS --- */}
+                        <div className="md:col-span-2 pt-4 border-t">
+                             <Label className="flex items-center gap-2 mb-2 font-medium"><Home className="h-4 w-4" />Business Address</Label>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="addressLine1">Address Line</Label>
+                                    <Input id="addressLine1" name="addressLine1" type="text" value={formData.address.addressLine1} onChange={handleInputChange} placeholder="e.g., 123 Main St" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="city">City</Label>
+                                    <Input id="city" name="city" type="text" value={formData.address.city} onChange={handleInputChange} placeholder="e.g., Hanamkonda" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="state">State</Label>
+                                    <Input id="state" name="state" type="text" value={formData.address.state} onChange={handleInputChange} placeholder="e.g., Telangana" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="pincode">Pincode</Label>
+                                    <Input id="pincode" name="pincode" type="text" value={formData.address.pincode} onChange={handleInputChange} placeholder="e.g., 506001" required />
+                                </div>
+                            </div>
+                        </div>
+                        {/* --- END: ADD ADDRESS FIELDS --- */}
+
                         {/* Footer (spanning both columns) */}
-                        <div className="md:col-span-2">
+                        <div className="md:col-span-2 pt-4">
                             {error && <p className="text-sm text-center text-destructive mb-4">{error}</p>}
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading ? "Creating Account..." : "Create Provider Account"}
@@ -263,4 +311,3 @@ export default function ProviderRegistrationPage() {
     </div>
   )
 }
-
