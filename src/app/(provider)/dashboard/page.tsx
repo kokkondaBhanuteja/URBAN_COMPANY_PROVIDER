@@ -41,6 +41,13 @@ export default function ProviderDashboardPage() {
     queryFn: fetchStats,
   });
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(amount);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
@@ -81,7 +88,7 @@ export default function ProviderDashboardPage() {
         />
         <StatCard
           title="Earnings This Month"
-          value={`$${(stats?.monthlyEarnings ?? 0).toFixed(2)}`}
+          value={formatCurrency(stats?.monthlyEarnings ?? 0)}
           icon={DollarSign}
           description="+8% from last month"
           trend="up"
@@ -127,4 +134,3 @@ export default function ProviderDashboardPage() {
     </div>
   );
 }
-

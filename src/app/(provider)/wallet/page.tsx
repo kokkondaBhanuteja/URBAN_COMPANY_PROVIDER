@@ -10,7 +10,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -20,12 +20,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, ArrowUp, ArrowDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DollarSign, ArrowUp, ArrowDown, SearchIcon, FilterX } from "lucide-react";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 // API call function
-const fetchWalletData = async () => {
-  const res = await fetch("/api/provider/wallet");
+const fetchWalletData = async (filters: {
+  search: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+}) => {
+  const url = new URL("/api/provider/wallet", window.location.origin);
+  if (filters.search) url.searchParams.append("search", filters.search);
+  if (filters.type && filters.type !== "all")
+    url.searchParams.append("type", filters.type);
+  if (filters.startDate)
+    url.searchParams.append("startDate", filters.startDate);
+  if (filters.endDate) url.searchParams.append("endDate", filters.endDate);
+
+  const res = await fetch(url.toString());
   if (!res.ok) {
     throw new Error("Failed to fetch wallet data");
   }
@@ -33,6 +55,21 @@ const fetchWalletData = async () => {
 };
 
 export default function ProviderWalletPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    search: "",
+    type: "all",
+    startDate: "",
+    endDate: "",
+  });
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchTerm }));
+    }, 1000); // 1000ms debounce delay
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
+
   const {
     data: walletData,
     isLoading,
@@ -40,13 +77,20 @@ export default function ProviderWalletPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["providerWallet"],
-    queryFn: fetchWalletData,
+    queryKey: ["providerWallet", filters],
+    queryFn: () => fetchWalletData(filters),
   });
 
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setFilters({ search: "", type: "all", startDate: "", endDate: "" });
+  };
+
   const handleWithdraw = () => {
-    // In a real application, this would open a modal to enter bank details
-    // and trigger a payout process on the backend.
     toast.info("Withdrawal Feature Coming Soon!", {
       description: "This feature is currently under development.",
     });
@@ -94,8 +138,59 @@ export default function ProviderWalletPage() {
           icon={DollarSign}
           description="Available for withdrawal"
         />
-        {/* You can add more stats here if needed */}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filter Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative w-full md:w-1/3">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                placeholder="Search by description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select
+              value={filters.type}
+              onValueChange={(value) => handleFilterChange("type", value)}
+            >
+              <SelectTrigger className="w-full md:w-auto">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="credit">Credit</SelectItem>
+                <SelectItem value="debit">Debit</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange("startDate", e.target.value)}
+              className="w-full md:w-auto"
+            />
+            <Input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange("endDate", e.target.value)}
+              className="w-full md:w-auto"
+            />
+            <Button
+              variant="outline"
+              onClick={handleClearFilters}
+              className="flex items-center gap-2"
+            >
+              <FilterX className="h-4 w-4" />
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -109,9 +204,12 @@ export default function ProviderWalletPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Details</TableHead>
+                <TableHead>Reason</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Balance Before</TableHead>
+                <TableHead className="text-right">Balance After</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,6 +219,7 @@ export default function ProviderWalletPage() {
                     <TableCell>
                       {new Date(tx.createdAt).toLocaleDateString()}
                     </TableCell>
+                    <TableCell>{tx.description}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {tx.type === "credit" ? (
@@ -132,7 +231,7 @@ export default function ProviderWalletPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="capitalize">{tx.reason.replace("_", " ")}</span>
+                      <span className="capitalize">{tx.reason.replace(/_/g, " ")}</span>
                     </TableCell>
                     <TableCell
                       className={`text-right font-medium ${
@@ -142,12 +241,18 @@ export default function ProviderWalletPage() {
                       {tx.type === "credit" ? "+" : "-"}
                       {formatCurrency(tx.amount)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(tx.balanceBefore)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(tx.balanceAfter)}
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No transactions yet.
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No transactions found.
                   </TableCell>
                 </TableRow>
               )}
