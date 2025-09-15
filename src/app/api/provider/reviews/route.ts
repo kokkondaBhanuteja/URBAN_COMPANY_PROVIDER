@@ -3,7 +3,9 @@ import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { connectDb } from "@/lib/dbConnect";
 import Review from "@/database/reviewModel";
 import Provider from "@/database/ProviderModel";
-import User from "@/database/userModel"; // Ensure User model is imported for population
+import User from "@/database/userModel";
+
+const REVIEWS_PER_PAGE = 10;
 
 export async function GET(req: NextRequest) {
   await connectDb();
@@ -12,7 +14,10 @@ export async function GET(req: NextRequest) {
     const userId = headersWithUser.get("x-user-id");
 
     if (!userId) {
-        return NextResponse.json({ message: "User ID not found after middleware" }, { status: 401 });
+      return NextResponse.json(
+        { message: "User ID not found after middleware" },
+        { status: 401 }
+      );
     }
 
     const provider = await Provider.findOne({ userId });
@@ -24,35 +29,75 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const reviews = await Review.find({
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search");
+    const rating = searchParams.get("rating");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+
+    const query: any = {
       providerId: provider._id,
-    })
-      // FIX: Changed "customerId" to "consumerId" and "name" to "userName" to match the models
-      .populate({ path: "consumerId", select: "userName", model: User })
-      .sort({ createdAt: -1 })
-      .limit(50);
-
-    // Calculate review statistics
-    const totalReviews = reviews.length;
-    const fiveStars = reviews.filter((r) => r.rating === 5).length;
-    const fourStars = reviews.filter((r) => r.rating === 4).length;
-    const averageRating =
-      totalReviews > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-        : 0;
-
-    const stats = {
-      averageRating: Math.round(averageRating * 10) / 10,
-      totalReviews,
-      fiveStars,
-      fourStars,
     };
 
-    return NextResponse.json({ reviews, stats });
+    if (rating && rating !== "all") {
+      query.rating = parseInt(rating, 10);
+    }
+
+    if (startDate) {
+      query.createdAt = { ...query.createdAt, $gte: new Date(startDate) };
+    }
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+      query.createdAt = { ...query.createdAt, $lt: endOfDay };
+    }
+    
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      const users = await User.find({ userName: searchRegex }).select("_id");
+
+      query.$or = [
+        { comment: searchRegex },
+        { consumerId: { $in: users.map(u => u._id) } }
+      ];
+    }
+
+    const totalReviews = await Review.countDocuments(query);
+    const totalPages = Math.ceil(totalReviews / REVIEWS_PER_PAGE);
+
+    const reviews = await Review.find(query)
+      .populate({ path: "consumerId", select: "userName", model: User })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * REVIEWS_PER_PAGE)
+      .limit(REVIEWS_PER_PAGE);
+
+    const statsResult = await Review.aggregate([
+      { $match: { providerId: provider._id } },
+      {
+        $group: {
+          _id: "$rating",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = {
+      averageRating: provider.averageRating || 0,
+      totalReviews: await Review.countDocuments({ providerId: provider._id }),
+      fiveStars: statsResult.find(r => r._id === 5)?.count || 0,
+      fourStars: statsResult.find(r => r._id === 4)?.count || 0,
+    };
+
+
+    return NextResponse.json({ reviews, stats, totalPages });
   } catch (error: any) {
     console.error("Reviews fetch error:", error);
     return NextResponse.json(
-      { message: error.message || "An error occurred while fetching reviews" },
+      {
+        message:
+          error.message || "An error occurred while fetching reviews",
+      },
       { status: 500 }
     );
   }

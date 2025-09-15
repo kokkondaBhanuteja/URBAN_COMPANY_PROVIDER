@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, User, HelpCircle, BarChart3, Calendar, CreditCard, Star, LogOut, Wallet} from "lucide-react";
+import { Bell, User, HelpCircle, BarChart3, Calendar, Star, LogOut, Wallet} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,7 +26,6 @@ import { jwtDecode } from "jwt-decode";
 const sidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
   { id: "bookings", label: "My Bookings", icon: Calendar, href: "/bookings" },
-  { id: "earnings", label: "Earnings", icon: CreditCard, href: "/earnings" },
   { id: "reviews", label: "Reviews", icon: Star, href: "/reviews" },
   { id: "wallet", label: "Wallet", icon: Wallet, href: "/wallet" },
   { id: "support", label: "Support", icon: HelpCircle, href: "/support" },
@@ -263,4 +262,3 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     </VerificationCheck>
   )
 }
-
