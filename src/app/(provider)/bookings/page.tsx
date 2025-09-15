@@ -1,3 +1,4 @@
+// src/app/(provider)/bookings/page.tsx
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
