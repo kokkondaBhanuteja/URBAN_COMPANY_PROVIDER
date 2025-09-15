@@ -37,8 +37,15 @@ export async function GET(req: NextRequest) {
     ]);
 
     // This can be simplified as it's the same as total revenue for now
-    const pendingPayoutsResult = totalRevenueResult;
-
+    const pendingPayoutsResult = await Booking.aggregate([
+      {
+          $match: {
+              providerId: provider._id,
+              bookingStatus: { $in: ["assigned", "in_progress"] }
+          }
+      },
+      { $group: { _id: null, total: { $sum: "$pricing.finalAmount" } } }
+  ]);
     // --- FIX: Add logic to calculate current month's earnings ---
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
