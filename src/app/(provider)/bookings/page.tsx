@@ -49,42 +49,9 @@ import ErrorMessage from "@/components/shared/ErrorMessage";
 import BookingDetails from "@/components/shared/BookingDetails";
 import StatCard from "@/components/shared/StatCard";
 import { toast } from "sonner";
+import { Booking } from "@/types"; // <-- IMPORT THE SHARED TYPE
 
 // Interfaces
-interface Booking {
-  _id: string;
-  orderId: string;
-  userId: {
-    userName: string;
-    mobileNumber?: string;
-  };
-  serviceId: {
-    serviceName: string;
-  };
-  scheduledAt: string;
-  createdAt: string;
-  bookingStatus:
-    | "requested"
-    | "confirmed"
-    | "assigned"
-    | "in_progress"
-    | "completed"
-    | "cancelled_by_user"
-    | "cancelled_by_provider"
-    | "cancelled";
-  serviceAddress: {
-    addressLine1: string;
-    city: string;
-    pincode: string;
-    state: string;
-  };
-  pricing: {
-    basePrice: number;
-    finalAmount: number;
-  };
-  specialInstructions?: string;
-}
-
 interface Earnings {
   summary: {
     totalRevenue: number;

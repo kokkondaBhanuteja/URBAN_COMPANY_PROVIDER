@@ -22,39 +22,7 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-
-interface Booking {
-  _id: string;
-  orderId: string;
-  userId: {
-    userName: string;
-    mobileNumber?: string;
-  };
-  serviceId: {
-    serviceName: string;
-  };
-  scheduledAt: string;
-  createdAt: string;
-  bookingStatus:
-    | "requested"
-    | "confirmed"
-    | "assigned"
-    | "in_progress"
-    | "completed"
-    | "cancelled_by_user"
-    | "cancelled_by_provider";
-  serviceAddress: {
-    addressLine1: string;
-    city: string;
-    pincode: string;
-    state: string;
-  };
-  pricing: {
-    basePrice: number;
-    finalAmount: number;
-  };
-  specialInstructions?: string;
-}
+import { Booking } from "@/types"; // <-- IMPORT THE SHARED TYPE
 
 interface BookingDetailsProps {
   booking: Booking | null;
@@ -142,6 +110,7 @@ const handleOtpChange = (element: HTMLInputElement, index: number) => {
         return "bg-green-100 text-green-800";
       case "cancelled_by_user":
       case "cancelled_by_provider":
+      case "cancelled":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
