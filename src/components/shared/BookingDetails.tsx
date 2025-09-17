@@ -158,7 +158,7 @@ const handleOtpChange = (element: HTMLInputElement, index: number) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
-        {view === "details" && (
+        {view === "details" ? (
           <>
             <DialogHeader>
               <DialogTitle>Booking Details</DialogTitle>
@@ -275,9 +275,7 @@ const handleOtpChange = (element: HTMLInputElement, index: number) => {
               </div>
             </DialogFooter>
           </>
-        )}
-
-        {view === "otp" && (
+        ) : (
           <>
             <DialogHeader>
               <DialogTitle>Enter Completion OTP</DialogTitle>
@@ -299,7 +297,9 @@ const handleOtpChange = (element: HTMLInputElement, index: number) => {
                     onChange={(e) => handleOtpChange(e.target, index)}
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     maxLength={1}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    ref={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
                     className="w-12 h-14 text-center text-2xl font-semibold"
                   />
                 ))}

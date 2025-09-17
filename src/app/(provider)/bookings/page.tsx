@@ -63,6 +63,7 @@ interface Booking {
   };
   scheduledAt: string;
   createdAt: string;
+  // FIX: Removed "cancelled" as a status, as it's a filter, not a DB status
   bookingStatus:
     | "requested"
     | "confirmed"
@@ -70,8 +71,7 @@ interface Booking {
     | "in_progress"
     | "completed"
     | "cancelled_by_user"
-    | "cancelled_by_provider"
-    | "cancelled";
+    | "cancelled_by_provider";
   serviceAddress: {
     addressLine1: string;
     city: string;

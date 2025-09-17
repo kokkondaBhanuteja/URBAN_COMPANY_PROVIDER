@@ -25,18 +25,17 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
+    const status = searchParams.get("status")?.toLowerCase();
     const search = searchParams.get("search");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const page = parseInt(searchParams.get("page") || "1", 10);
 
     let query: any = { providerId: provider._id };
-
     if (status && status !== "all") {
       // Handle consolidated "cancelled" status
       if (status === 'cancelled') {
-        query.bookingStatus = { $in: ['cancelled_by_user', 'cancelled_by_provider'] };
+        query.bookingStatus = { $in: ['cancelled_by_user', 'cancelled_by_provider', 'cancelled'] };
       } else {
         query.bookingStatus = status;
       }
@@ -51,17 +50,18 @@ export async function GET(req: NextRequest) {
       query.scheduledAt = { ...query.scheduledAt, $lt: endOfDay };
     }
     
-    if (search) {
-      const searchRegex = new RegExp(search, "i");
-      const users = await User.find({ userName: searchRegex }).select("_id");
-      const services = await Service.find({ serviceName: searchRegex }).select("_id");
-      
-      query.$or = [
-        { "userId": { $in: users.map(u => u._id) } },
-        { "serviceId": { $in: services.map(s => s._id) } },
-        { "orderId": { $regex: searchRegex } }
-      ];
-    }
+    if (search && search.trim() !== "") {
+      // *** FIX END ***
+        const searchRegex = new RegExp(search, "i");
+        const users = await User.find({ userName: searchRegex }).select("_id");
+        const services = await Service.find({ serviceName: searchRegex }).select("_id");
+        
+        query.$or = [
+          { "userId": { $in: users.map(u => u._id) } },
+          { "serviceId": { $in: services.map(s => s._id) } },
+          { "orderId": { $regex: searchRegex } }
+        ];
+      }
     
     const totalBookings = await Booking.countDocuments(query);
     const totalPages = Math.ceil(totalBookings / BOOKINGS_PER_PAGE);
