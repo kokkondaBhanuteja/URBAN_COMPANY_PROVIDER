@@ -113,6 +113,7 @@ type ChartTooltipContentProps = React.ComponentProps<"div"> &
     indicator?: "line" | "dot" | "dashed"
     nameKey?: string
     labelKey?: string
+    payload?: any[]
   }
 
 function ChartTooltipContent({
