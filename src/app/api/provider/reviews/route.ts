@@ -5,7 +5,7 @@ import Review from "@/database/reviewModel";
 import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
 
-const REVIEWS_PER_PAGE = 10;
+const REVIEWS_PER_PAGE = 5;
 
 export async function GET(req: NextRequest) {
   await connectDb();

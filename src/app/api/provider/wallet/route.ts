@@ -4,6 +4,8 @@ import { connectDb } from "@/lib/dbConnect";
 import Wallet from "@/database/walletModel";
 import WalletTransaction from "@/database/walletTransactionModel";
 
+const TRANSACTIONS_PER_PAGE = 5;
+
 export async function GET(req: NextRequest) {
   await connectDb();
   try {
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get("type");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const page = parseInt(searchParams.get("page") || "1", 10);
 
     const query: any = { walletId: wallet._id };
 
@@ -45,13 +48,18 @@ export async function GET(req: NextRequest) {
       query.createdAt = { ...query.createdAt, $lt: endOfDay };
     }
 
+    const totalTransactions = await WalletTransaction.countDocuments(query);
+    const totalPages = Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE);
+
     const transactions = await WalletTransaction.find(query)
       .sort({ createdAt: -1 })
-      .limit(50); 
+      .skip((page - 1) * TRANSACTIONS_PER_PAGE)
+      .limit(TRANSACTIONS_PER_PAGE); 
 
     return NextResponse.json({
       balance: wallet.balance,
       transactions,
+      totalPages,
     });
   } catch (error: any) {
     console.error("Provider wallet fetch error:", error);

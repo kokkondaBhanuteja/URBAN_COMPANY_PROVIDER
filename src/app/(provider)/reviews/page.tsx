@@ -272,6 +272,7 @@ export default function ReviewsPage() {
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
+                  disabled={currentPage === 1}
                 />
               </PaginationItem>
               <PaginationItem>
@@ -281,6 +282,7 @@ export default function ReviewsPage() {
                       Math.min(prev + 1, totalPages || 1)
                     )
                   }
+                  disabled={currentPage === totalPages}
                 />
               </PaginationItem>
             </PaginationContent>

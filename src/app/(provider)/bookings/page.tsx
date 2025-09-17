@@ -63,7 +63,6 @@ interface Booking {
   };
   scheduledAt: string;
   createdAt: string;
-  // FIX: Removed "cancelled" as a status, as it's a filter, not a DB status
   bookingStatus:
     | "requested"
     | "confirmed"
@@ -71,7 +70,8 @@ interface Booking {
     | "in_progress"
     | "completed"
     | "cancelled_by_user"
-    | "cancelled_by_provider";
+    | "cancelled_by_provider"
+    | "cancelled";
   serviceAddress: {
     addressLine1: string;
     city: string;
@@ -449,6 +449,7 @@ export default function BookingsPage() {
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
+                  disabled={currentPage === 1}
                 />
               </PaginationItem>
               <PaginationItem>
@@ -461,6 +462,7 @@ export default function BookingsPage() {
                       )
                     )
                   }
+                  disabled={currentPage === totalPages}
                 />
               </PaginationItem>
             </PaginationContent>

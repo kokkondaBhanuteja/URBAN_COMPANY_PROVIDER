@@ -95,7 +95,7 @@ export default function ProviderDashboardPage() {
         />
         <StatCard
           title="Average Rating"
-          value={stats?.averageRating ?? 0}
+          value={Math.round(stats?.averageRating) ?? 0}
           icon={Star}
           description="Based on 95 reviews"
         />

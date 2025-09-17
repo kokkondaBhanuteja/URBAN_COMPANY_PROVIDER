@@ -28,17 +28,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 import { DollarSign, ArrowUp, ArrowDown, SearchIcon, FilterX } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
 // API call function
-const fetchWalletData = async (filters: {
-  search: string;
-  type: string;
-  startDate: string;
-  endDate: string;
-}) => {
+const fetchWalletData = async (
+  filters: {
+    search: string;
+    type: string;
+    startDate: string;
+    endDate: string;
+  },
+  page: number
+) => {
   const url = new URL("/api/provider/wallet", window.location.origin);
   if (filters.search) url.searchParams.append("search", filters.search);
   if (filters.type && filters.type !== "all")
@@ -46,6 +56,7 @@ const fetchWalletData = async (filters: {
   if (filters.startDate)
     url.searchParams.append("startDate", filters.startDate);
   if (filters.endDate) url.searchParams.append("endDate", filters.endDate);
+  url.searchParams.append("page", page.toString());
 
   const res = await fetch(url.toString());
   if (!res.ok) {
@@ -62,6 +73,7 @@ export default function ProviderWalletPage() {
     startDate: "",
     endDate: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -77,8 +89,8 @@ export default function ProviderWalletPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["providerWallet", filters],
-    queryFn: () => fetchWalletData(filters),
+    queryKey: ["providerWallet", filters, currentPage],
+    queryFn: () => fetchWalletData(filters, currentPage),
   });
 
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
@@ -118,6 +130,8 @@ export default function ProviderWalletPage() {
       </div>
     );
   }
+  
+  const { balance, transactions, totalPages } = walletData || { balance: 0, transactions: [], totalPages: 1 };
 
   return (
     <div className="space-y-6">
@@ -134,7 +148,7 @@ export default function ProviderWalletPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard
           title="Current Balance"
-          value={formatCurrency(walletData?.balance || 0)}
+          value={formatCurrency(balance)}
           icon={DollarSign}
           description="Available for withdrawal"
         />
@@ -213,8 +227,8 @@ export default function ProviderWalletPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {walletData?.transactions?.length > 0 ? (
-                walletData.transactions.map((tx: any) => (
+              {transactions?.length > 0 ? (
+                transactions.map((tx: any) => (
                   <TableRow key={tx._id}>
                     <TableCell>
                       {new Date(tx.createdAt).toLocaleDateString()}
@@ -258,6 +272,28 @@ export default function ProviderWalletPage() {
               )}
             </TableBody>
           </Table>
+          <Pagination className="mt-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(prev + 1, totalPages || 1)
+                    )
+                  }
+                  disabled={currentPage === totalPages}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </CardContent>
       </Card>
     </div>

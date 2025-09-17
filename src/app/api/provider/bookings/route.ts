@@ -6,7 +6,7 @@ import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
 import Service from "@/database/serviceModel";
 
-const BOOKINGS_PER_PAGE = 10; // Define how many bookings per page
+const BOOKINGS_PER_PAGE = 5; // Define how many bookings per page
 
 export async function GET(req: NextRequest) {
   await connectDb();
