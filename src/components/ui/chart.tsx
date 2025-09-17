@@ -114,6 +114,7 @@ type ChartTooltipContentProps = React.ComponentProps<"div"> &
     nameKey?: string
     labelKey?: string
     payload?: any[]
+    label?: any
   }
 
 function ChartTooltipContent({
