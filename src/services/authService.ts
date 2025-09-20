@@ -1,9 +1,11 @@
+// src/services/authService.ts
+
 import User, { IUser } from '@/database/userModel';
 import Provider from '@/database/ProviderModel';
 import Address from '@/database/addressmodel';
 import Wallet from '@/database/walletModel';
 import jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose'; // Import mongoose
 
 interface RegisterParams {
   userName: string;
@@ -32,35 +34,47 @@ interface RegisterParams {
 export const registerUser = async (data: RegisterParams): Promise<IUser> => {
   const { userName, email, password, mobileNumber, userType, bio, servicesOffered, serviceableLocations, availability, address } = data;
 
-  const user = new User({ userName, email, password, mobileNumber, userType });
-  await user.save();
-  
-  const newAddress = new Address({
-    userId: user._id,
-    ...address,
-  });
-  await newAddress.save();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (userType === "provider") {
-    const newWallet = new Wallet({
-      userId: user._id,
-      balance: 0,
-    });
-    await newWallet.save();
+  try {
+    const user = new User({ userName, email, password, mobileNumber, userType });
+    await user.save({ session });
 
-    const provider = new Provider({
+    const newAddress = new Address({
       userId: user._id,
-      walletId: newWallet._id,
-      bio,
-      servicesOffered,
-      serviceableLocations,
-      isActive: false,
-      availability,
+      ...address,
     });
-    await provider.save();
+    await newAddress.save({ session });
+
+    if (userType === "provider") {
+      const newWallet = new Wallet({
+        userId: user._id,
+        balance: 0,
+      });
+      await newWallet.save({ session });
+
+      const provider = new Provider({
+        userId: user._id,
+        walletId: newWallet._id,
+        bio,
+        servicesOffered,
+        serviceableLocations,
+        isActive: false,
+        availability,
+      });
+      await provider.save({ session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return user;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
-
-  return user;
 };
 
 // --- THIS IS THE COMPLETE AND CORRECTED FUNCTION ---

@@ -2,12 +2,14 @@
 import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import User from "@/database/userModel";
+import logger from "@/lib/logger";
+
 
 export async function providerMiddleware(req: NextRequest): Promise<Headers> {
-  // 1. Get token from cookies instead of headers
   const token = req.cookies.get("provider_token")?.value;
 
   if (!token) {
+    logger.warn("Authorization token is missing");
     throw new Error("Authorization token is missing");
   }
 
@@ -15,11 +17,13 @@ export async function providerMiddleware(req: NextRequest): Promise<Headers> {
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string; userType: string };
 
     if (decoded.userType !== 'provider' && decoded.userType !== 'admin') {
+         logger.warn(`Access denied: Not a provider. userId: ${decoded.id}`);
          throw new Error("Access denied: Not a provider");
     }
 
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
+      logger.warn(`User not found for id: ${decoded.id}`);
       throw new Error("User not found");
     }
 
@@ -30,6 +34,7 @@ export async function providerMiddleware(req: NextRequest): Promise<Headers> {
     return requestHeaders;
 
   } catch (error) {
+    logger.error("Invalid or expired token", { error });
     throw new Error("Invalid or expired token");
   }
 }

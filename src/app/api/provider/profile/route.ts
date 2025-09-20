@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { providerMiddleware } from "@/middlewares/providerMiddleware";
+import mongoose from "mongoose";
 import { connectDb } from "@/lib/dbConnect";
+import logger from '@/lib/logger';
 import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
 import Service from "@/database/serviceModel";
@@ -19,6 +21,7 @@ type ApiAvailabilitySlot = {
 };
 export async function GET(req: NextRequest) {
   await connectDb();
+  logger.info("Fetching profile for a provider");
 
   try {
     const headersWithUser = await providerMiddleware(req);
@@ -38,13 +41,13 @@ export async function GET(req: NextRequest) {
     );
 
     if (!provider || !user) {
+      logger.warn(`Provider or user not found for userId: ${userId}`);
       return NextResponse.json(
         { message: "Provider profile not found" },
         { status: 404 }
       );
     }
 
-    // --- START OF THE FIX ---
     const formattedAvailability = provider.availability.map((slot: DbAvailabilitySlot) => {
         const startTime = new Date(slot.startTime);
         const endTime = new Date(slot.endTime);
@@ -61,7 +64,6 @@ export async function GET(req: NextRequest) {
             endTime: formatTime(endTime),
         };
     });
-    // --- END OF THE FIX ---
 
     const profileData = {
       name: user.userName,
@@ -72,12 +74,13 @@ export async function GET(req: NextRequest) {
       services: (provider.servicesOffered as any[]).map(
         (service) => service.serviceName
       ),
-      availability: formattedAvailability, // Use the newly formatted array
+      availability: formattedAvailability,
     };
 
+    logger.info(`Successfully fetched profile for userId: ${userId}`);
     return NextResponse.json(profileData);
   } catch (error: any) {
-    console.error("Profile fetch error:", error);
+    logger.error("Profile fetch error:", { error: error.message, stack: error.stack });
     return NextResponse.json(
       { message: error.message || "An error occurred while fetching profile" },
       { status: 500 }
@@ -87,6 +90,10 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   await connectDb();
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  logger.info("Starting transaction to update provider profile");
+
   try {
     const headersWithUser = await providerMiddleware(req);
     const userId = headersWithUser.get("x-user-id");
@@ -100,7 +107,6 @@ export async function PUT(req: NextRequest) {
 
     const updateData = await req.json();
 
-    // --- START OF THE FIX ---
     let convertedAvailability;
     if (updateData.availability && Array.isArray(updateData.availability)) {
         convertedAvailability = updateData.availability.map((slot:ApiAvailabilitySlot) => {
@@ -114,17 +120,18 @@ export async function PUT(req: NextRequest) {
             };
         });
     }
-    // --- END OF THE FIX ---
 
     await User.findByIdAndUpdate(userId, {
       userName: updateData.name,
       email: updateData.email,
       mobileNumber: updateData.phone,
-    });
+    }, { session });
+    logger.info(`User data updated for userId: ${userId}`);
+
 
     const serviceIds = await Service.find({
       serviceName: { $in: updateData.services },
-    }).select("_id");
+    }).select("_id").session(session);
 
     const serviceObjectIds = serviceIds.map((s) => s._id);
 
@@ -134,21 +141,31 @@ export async function PUT(req: NextRequest) {
         bio: updateData.bio,
         serviceableLocations: updateData.location,
         servicesOffered: serviceObjectIds,
-        availability: convertedAvailability, // Use the new array with Date objects
+        availability: convertedAvailability,
       },
-      { new: true }
+      { new: true, session }
     ).populate("userId", "name email");
 
     if (!provider) {
+      logger.warn(`Provider not found for userId: ${userId}`);
       return NextResponse.json(
         { message: "Provider profile not found" },
         { status: 404 }
       );
     }
+    logger.info(`Provider data updated for userId: ${userId}`);
+
+
+    await session.commitTransaction();
+    logger.info(`Transaction committed for provider profile update: ${userId}`);
+    session.endSession();
+
 
     return NextResponse.json(provider);
   } catch (error: any) {
-    console.error("Profile update error:", error);
+    await session.abortTransaction();
+    logger.error("Provider profile update transaction aborted", { error: error.message, stack: error.stack });
+    session.endSession();
     return NextResponse.json(
       { message: error.message || "An error occurred while updating profile" },
       { status: 500 }

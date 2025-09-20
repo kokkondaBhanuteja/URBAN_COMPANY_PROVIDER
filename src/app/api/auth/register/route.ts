@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registerUser } from "@/services/authService";
 import { connectDb } from "@/lib/dbConnect";
+import logger from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   await connectDb();
   try {
     const body = await req.json();
-    // body now includes both User + Provider data
+    logger.info("Registration attempt for email: " + body.email);
     const user = await registerUser(body);
 
     return NextResponse.json(
@@ -14,6 +15,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    logger.error("Registration API error:", { error: error.message, stack: error.stack });
     return NextResponse.json({ message: error.message || "Registration failed" }, { status: 400 });
   }
 }

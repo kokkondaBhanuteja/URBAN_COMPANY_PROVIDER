@@ -4,11 +4,14 @@ import { connectDb } from "@/lib/dbConnect";
 import Review from "@/database/reviewModel";
 import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
+import logger from "@/lib/logger";
+
 
 const REVIEWS_PER_PAGE = 5;
 
 export async function GET(req: NextRequest) {
   await connectDb();
+  logger.info("Fetching reviews for a provider");
   try {
     const headersWithUser = await providerMiddleware(req);
     const userId = headersWithUser.get("x-user-id");
@@ -23,6 +26,7 @@ export async function GET(req: NextRequest) {
     const provider = await Provider.findOne({ userId });
 
     if (!provider) {
+      logger.warn(`Provider not found for userId: ${userId}`);
       return NextResponse.json(
         { message: "Provider profile not found" },
         { status: 404 }
@@ -89,10 +93,10 @@ export async function GET(req: NextRequest) {
       fourStars: statsResult.find(r => r._id === 4)?.count || 0,
     };
 
-
+    logger.info(`Successfully fetched reviews for providerId: ${provider._id}`);
     return NextResponse.json({ reviews, stats, totalPages });
   } catch (error: any) {
-    console.error("Reviews fetch error:", error);
+    logger.error("Reviews fetch error:", { error: error.message, stack: error.stack });
     return NextResponse.json(
       {
         message:

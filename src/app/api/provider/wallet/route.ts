@@ -3,11 +3,13 @@ import { providerMiddleware } from "@/middlewares/providerMiddleware";
 import { connectDb } from "@/lib/dbConnect";
 import Wallet from "@/database/walletModel";
 import WalletTransaction from "@/database/walletTransactionModel";
+import logger from "@/lib/logger";
 
 const TRANSACTIONS_PER_PAGE = 5;
 
 export async function GET(req: NextRequest) {
   await connectDb();
+  logger.info("Fetching wallet data for a provider");
   try {
     const headers = await providerMiddleware(req);
     const userId = headers.get("x-user-id");
@@ -19,6 +21,7 @@ export async function GET(req: NextRequest) {
     const wallet = await Wallet.findOne({ userId });
 
     if (!wallet) {
+      logger.warn(`Wallet not found for userId: ${userId}`);
       return NextResponse.json({ message: "Wallet not found for this provider" }, { status: 404 });
     }
 
@@ -56,13 +59,14 @@ export async function GET(req: NextRequest) {
       .skip((page - 1) * TRANSACTIONS_PER_PAGE)
       .limit(TRANSACTIONS_PER_PAGE); 
 
+    logger.info(`Successfully fetched wallet data for userId: ${userId}`);
     return NextResponse.json({
       balance: wallet.balance,
       transactions,
       totalPages,
     });
   } catch (error: any) {
-    console.error("Provider wallet fetch error:", error);
+    logger.error("Provider wallet fetch error:", { error: error.message, stack: error.stack });
     return NextResponse.json(
       { message: error.message || "Failed to fetch wallet data" },
       { status: 500 }

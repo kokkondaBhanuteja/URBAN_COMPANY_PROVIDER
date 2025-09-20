@@ -1,0 +1,60 @@
+{"level":"info","message":"Fetching notifications for a provider"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Successfully fetched notifications for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Fetching dashboard stats for a provider"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Fetching dashboard stats for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Successfully fetched dashboard stats for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully fetched dashboard stats for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Fetching dashboard stats for a provider"}
+{"level":"info","message":"Fetching notifications for a provider"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Fetching dashboard stats for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Successfully fetched notifications for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully fetched dashboard stats for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully fetched dashboard stats for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Fetching all active services"}
+{"level":"info","message":"Fetching profile for a provider"}
+{"level":"info","message":"Successfully fetched all active services"}
+{"level":"info","message":"Successfully fetched profile for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Fetching notifications for a provider"}
+{"level":"info","message":"Successfully fetched notifications for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Starting transaction to update provider profile"}
+{"level":"info","message":"User data updated for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Provider data updated for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Transaction committed for provider profile update: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Fetching profile for a provider"}
+{"level":"info","message":"Successfully fetched profile for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Fetching notifications for a provider"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Fetching all active services"}
+{"level":"info","message":"Fetching profile for a provider"}
+{"level":"info","message":"Successfully fetched all active services"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Successfully fetched notifications for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully fetched profile for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Fetching notifications for a provider"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Fetching all active services"}
+{"level":"info","message":"Fetching profile for a provider"}
+{"level":"info","message":"Successfully fetched all active services"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Successfully fetched notifications for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully fetched profile for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Fetching notifications for a provider"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Successfully fetched notifications for providerId: 68c6eca44b7399fc69ab89a6"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Checking provider verification status"}
+{"level":"info","message":"Fetching profile for a provider"}
+{"level":"info","message":"Fetching all active services"}
+{"level":"info","message":"Successfully checked verification status for userId: 68c6ec9e4b7399fc69ab89a0"}
+{"level":"info","message":"Successfully fetched all active services"}
+{"level":"info","message":"Successfully fetched profile for userId: 68c6ec9e4b7399fc69ab89a0"}

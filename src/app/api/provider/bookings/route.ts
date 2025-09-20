@@ -5,11 +5,13 @@ import Booking from "@/database/bookingModel";
 import Provider from "@/database/ProviderModel";
 import User from "@/database/userModel";
 import Service from "@/database/serviceModel";
+import logger from "@/lib/logger";
 
-const BOOKINGS_PER_PAGE = 5; // Define how many bookings per page
+const BOOKINGS_PER_PAGE = 5;
 
 export async function GET(req: NextRequest) {
   await connectDb();
+  logger.info("Fetching bookings for a provider");
 
   try {
     const headersWithUser = await providerMiddleware(req);
@@ -21,6 +23,7 @@ export async function GET(req: NextRequest) {
 
     const provider = await Provider.findOne({ userId });
     if (!provider) {
+      logger.warn(`Provider not found for userId: ${userId}`);
       return NextResponse.json({ message: "Provider not found" }, { status: 404 });
     }
 
@@ -33,7 +36,6 @@ export async function GET(req: NextRequest) {
 
     let query: any = { providerId: provider._id };
     if (status && status !== "all") {
-      // Handle consolidated "cancelled" status
       if (status === 'cancelled') {
         query.bookingStatus = { $in: ['cancelled_by_user', 'cancelled_by_provider', 'cancelled'] };
       } else {
@@ -51,7 +53,6 @@ export async function GET(req: NextRequest) {
     }
     
     if (search && search.trim() !== "") {
-      // *** FIX END ***
         const searchRegex = new RegExp(search, "i");
         const users = await User.find({ userName: searchRegex }).select("_id");
         const services = await Service.find({ serviceName: searchRegex }).select("_id");
@@ -73,10 +74,11 @@ export async function GET(req: NextRequest) {
       .skip((page - 1) * BOOKINGS_PER_PAGE)
       .limit(BOOKINGS_PER_PAGE);
 
+    logger.info(`Successfully fetched bookings for providerId: ${provider._id}`);
     return NextResponse.json({ bookings, totalPages });
 
   } catch (error: any) {
-    console.error("Bookings fetch error:", error);
+    logger.error("Bookings fetch error:", { error: error.message, stack: error.stack });
     return NextResponse.json({ message: error.message || "An error occurred" }, { status: 500 });
   }
 }

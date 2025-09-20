@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loginUser } from '@/services/authService';
 import { connectDb } from '@/lib/dbConnect';
+import logger from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   await connectDb();
@@ -10,8 +11,8 @@ export async function POST(req: NextRequest) {
     
     const loginResult = await loginUser(email, password, 'provider');
 
-    // This check prevents the destructuring error if loginResult is not as expected.
     if (!loginResult || !loginResult.token || !loginResult.user) {
+        logger.error("Login failed: Could not retrieve authentication token for email: " + email);
         throw new Error("Login failed: Could not retrieve authentication token.");
     }
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     response.cookies.set('provider_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 60 * 60,
       path: '/',
       sameSite: 'strict',
     });
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    // This ensures that specific errors like "pending verification" are sent to the frontend.
+    logger.error("Login API error:", { error: errorMessage });
     return NextResponse.json({ message: errorMessage }, { status: 401 });
   }
 }
